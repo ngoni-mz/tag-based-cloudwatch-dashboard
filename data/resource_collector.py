@@ -352,7 +352,7 @@ def r53resolver_decorator(resource, config):
     resolverId = resource['ResourceARN'].split('/')[len(resource['ResourceARN'].split('/'))-1]
     r53resolver = boto3.client('route53resolver', config=config)
     response = r53resolver.get_resolver_endpoint(
-        ResolverEndpointId=resolverID
+        ResolverEndpointId=resolverId
     )
     return resource
 
