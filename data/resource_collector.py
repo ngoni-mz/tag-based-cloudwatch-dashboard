@@ -179,6 +179,8 @@ def router(resource, config):
         resource = medialive_decorator(resource, config)
     elif ':elasticfilesystem:' in arn:
         resource = efs_decorator(resource, config)
+    elif ':route53resolver:' in arn:
+        resource =r53resolver(resource, config)
     return resource
 
 
@@ -345,6 +347,14 @@ def efs_decorator(resource, config):
     resource['ThroughputMode'] = response['FileSystems'][0]['ThroughputMode']
     return resource
 
+def r53resolver_decorator(resource, config):
+    print(f'This resource is a Route 53 Resolver {resource["ResourceARN"]}')
+    resolverId = resource['ResourceARN'].split('/')[len(resource['ResourceARN'].split('/'))-1]
+    r53resolver = boto3.client('route53resolver', config=config)
+    response = r53resolver.get_resolver_endpoint(
+        ResolverEndpointId=resolverID
+    )
+    return resource
 
 def ec2_decorator(resource, config):
     print(f'This resource is EC2 {resource["ResourceARN"]}')
