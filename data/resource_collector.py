@@ -180,7 +180,7 @@ def router(resource, config):
     elif ':elasticfilesystem:' in arn:
         resource = efs_decorator(resource, config)
     elif ':route53resolver:' in arn:
-        resource =r53resolver(resource, config)
+        resource =r53resolver_decorator(resource, config)
     return resource
 
 
