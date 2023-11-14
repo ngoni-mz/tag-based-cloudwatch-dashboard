@@ -348,12 +348,24 @@ def efs_decorator(resource, config):
     return resource
 
 def r53resolver_decorator(resource, config):
+    resource['rnis'] = []
     print(f'This resource is a Route 53 Resolver {resource["ResourceARN"]}')
     resolverId = resource['ResourceARN'].split('/')[len(resource['ResourceARN'].split('/'))-1]
     r53resolver = boto3.client('route53resolver', config=config)
     response = r53resolver.get_resolver_endpoint(
         ResolverEndpointId=resolverId
     )
+    resolverIps = r53resolver.list_resolver_endpoint_ip_addresses(
+        ResolverEndpointId=resolverId
+    )
+    for ip in resolverIps['IpAddresses']:
+        resource['rnis'].append(ip['IpId'])
+    
+    if "in" in resolverId:
+        resource['ResolverType'] = "inbound"
+    else:
+        resource['ResolverType'] = "outbound"
+
     return resource
 
 def ec2_decorator(resource, config):
