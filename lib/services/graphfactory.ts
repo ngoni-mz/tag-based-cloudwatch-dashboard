@@ -30,6 +30,7 @@ import {S3WidgetSet} from "./servicewidgetsets/s3";
 import {MediaPackageWidgetSet} from "./servicewidgetsets/mediapackage";
 import {MediaLiveWidgetSet} from "./servicewidgetsets/medialive";
 import {EFSWidgetSet} from "./servicewidgetsets/efs";
+import { R53ResolverWidgetSet } from "./servicewidgetsets/r53resolver";
 import {SnsAction} from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as sns from "aws-cdk-lib/aws-sns";
 
@@ -511,6 +512,30 @@ export class GraphFactory extends Construct {
                         break;
                     }
 
+                    case "route53resolver": {
+                        if (!this.NetworkDashboard) {
+                            this.NetworkDashboard = new Dashboard(this, config.BaseName + '-Network-Dashboard', {
+                                dashboardName: config.BaseName + '-Network-Dashboard'
+                            });
+                        }
+                        const labelWidget = new TextWidget({
+                            markdown: "## Route 53 Resolver",
+                            width: 24,
+                            height: 1
+                        });
+                        this.NetworkDashboard.addWidgets(labelWidget)
+                        for (const resource of this.serviceArray[region][servicekey]) {
+                            const resolverId = resource.ResourceARN.split('/')[resource.ResourceARN.split('/').length - 1];
+                            const r53resolver = new R53ResolverWidgetSet(this, `r53resolver-${resolverId}-${region}`, resource);
+                            for (const widget of r53resolver.getWidgetSets()) {
+                                this.NetworkDashboard.addWidgets(widget);
+                            }
+                            this.alarmSet = this.alarmSet.concat(r53resolver.getAlarmSet());
+                            resourcecounter += 1;
+                        }
+                        break;
+                    }
+
                     default: {
                         console.log("Error: not recognised service");
                         break;
@@ -683,8 +708,20 @@ export class GraphFactory extends Construct {
                 } else {
                     this.serviceArray[region]["s3"].push(resource);
                 }
-            }
+            } else if (resource.ResourceARN.includes('arn:aws:route53resolver')){
+                if (!this.serviceArray[region]["route53resolver"]){
+                    this.serviceArray[region]["route53resolver"] = [resource];
+                } else {
+                    this.serviceArray[region]["route53resolver"].push(resource);
+                }  
+            } else if (resource.ResourceARN.includes('arn:aws:elasticfilesystem')){
+                if (!this.serviceArray[region]["elasticfilesystem"]){
+                    this.serviceArray[region]["elasticfilesystem"] = [resource];
+                } else {
+                    this.serviceArray[region]["elasticfilesystem"].push(resource);
+                }  
         }
+    }
     }
 
     private processEC2(region:string, servicekey:any){

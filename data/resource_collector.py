@@ -181,6 +181,8 @@ def router(resource, config):
         resource = efs_decorator(resource, config)
     elif 'arn:aws:elasticbeanstalk:' in arn:
         resource = beanstalk_decorator(resource,config)
+    elif 'arn:aws:route53resolver' in arn:
+        resource = r53resolver_decorator(resource,config)
     return resource
 
 
@@ -618,6 +620,25 @@ def tgw_decorator(resource, config):
     )
 
     resource['attachments'] = response['TransitGatewayAttachments']
+    return resource
+
+def r53resolver_decorator(resource, config):
+    print(f'This resouce is a Route 53 Resolver endpoint {resource["ResourceARN"]}')
+    r53resolverid = resource['ResourceARN'].split('/')[len(resource['ResourceARN'].split('/'))-1]
+    r53resolver = boto3.client('route53resolver', config=config)
+    response = r53resolver.get_resolver_endpoint(
+        ResolverEndpointId = r53resolverid
+    )
+    resource['ResolverType'] = response['ResolverEndpoint']['Direction']
+
+    rnis = r53resolver.list_resolver_endpoint_ip_addresses(
+        ResolverEndpointId = r53resolverid
+    )
+    resource['Rnis'] = []
+    rniIds = rnis['IpAddresses']
+    for id in rniIds:
+        resource['Rnis'].append(id['IpId'])
+
     return resource
 
 
